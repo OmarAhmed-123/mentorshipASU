@@ -7,10 +7,12 @@ import '../services/database_service.dart';
 import 'package:hive/hive.dart';
 
 class MovieViewModel extends ChangeNotifier {
-  final ApiService _apiService = ApiService();
-  final DatabaseService _databaseService = DatabaseService();
+  final ApiService apiService;
+  final DatabaseService databaseService;
   List<Movie> _movies = [];
   bool _isLoading = false;
+
+  MovieViewModel({required this.apiService, required this.databaseService});
 
   List<Movie> get movies => _movies;
   bool get isLoading => _isLoading;
@@ -20,12 +22,12 @@ class MovieViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final apiMovies = await _apiService.fetchMovies();
+      final apiMovies = await apiService.fetchMovies();
       _movies = apiMovies;
 
       // Save to SQLite
       for (var movie in _movies) {
-        await _databaseService.insertMovie(movie);
+        await databaseService.insertMovie(movie);
       }
 
       // Save to Hive
@@ -53,7 +55,7 @@ class MovieViewModel extends ChangeNotifier {
         _movies = box.values.toList();
       } else {
         // If Hive is empty, try loading from SQLite
-        _movies = await _databaseService.getMovies();
+        _movies = await databaseService.getMovies();
       }
       notifyListeners();
     } catch (e) {
@@ -65,7 +67,7 @@ class MovieViewModel extends ChangeNotifier {
     final index = _movies.indexWhere((m) => m.id == movie.id);
     if (index != -1) {
       _movies[index].isFavorite = !_movies[index].isFavorite;
-      await _databaseService.updateMovie(_movies[index]);
+      await databaseService.updateMovie(_movies[index]);
       final box = await Hive.openBox<Movie>('movies');
       await box.put(movie.id, _movies[index]);
       notifyListeners();

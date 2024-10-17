@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:provider/provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'models/movie.dart';
-import 'viewmodels/movie_view_model.dart';
+import 'cubits/movie_cubit.dart';
 import 'views/movie_list_view.dart';
+import 'services/api_service.dart';
+import 'services/database_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,16 +17,25 @@ void main() async {
 
   await Hive.initFlutter();
   Hive.registerAdapter(MovieAdapter());
-  runApp(const MyApp());
+
+  final apiService = ApiService();
+  final databaseService = DatabaseService();
+
+  runApp(MyApp(apiService: apiService, databaseService: databaseService));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final ApiService apiService;
+  final DatabaseService databaseService;
+
+  const MyApp(
+      {Key? key, required this.apiService, required this.databaseService})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => MovieViewModel(),
+    return BlocProvider(
+      create: (context) => MovieCubit(apiService, databaseService),
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Flutter Movie App',
